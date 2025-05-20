@@ -1,0 +1,202 @@
+<%- include('partials/_header') %>
+
+<body>
+
+    <nav class="banner navbar navbar-expand-md header-stripe navbar-light" role="navigation" aria-label="main">
+        <div class="container-fluid col-12 px-lg-5">
+        <div class="row">
+          <div class="col-md-12">   
+            <img src="<%= brandingImg %>" alt="<%= imgAltText %>"> Self-Checkout Station
+          </div>
+          </div>
+        </div>
+      </nav>
+    <div class="container patron-container">
+      <div class="row">
+        <div class="user-info">
+            <img src="img/barcoded_item1_big.gif" alt="<%= imgAltText %>">
+            <!-- modal for inactivity warning -->
+            <div class="modal fade" id="countdownModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                      <div class="modal-body" id="modalText">
+                      ...
+                      </div>
+                      <div class="modal-footer">
+                      <button type="button" class="btn btn-success">Stay Logged In</button>
+                      </div>
+                  </div>
+                </div>
+            </div>
+            <!-- end modal -->
+            <h3>Welcome, <%= userdata.first_name %> <%= userdata.last_name %></h3>
+            <form action="/logout" method="GET" style="margin-top: 20px;">
+                <button type="submit">Logout</button>
+              </form>
+            <p>Current Checkouts: <%= userdata.loans.value %></p>
+            <p>Fees Due: $<%= userdata.fees.value %></p>
+        </div>
+        </div>
+
+        <% if (message) { %>
+            <div class="alert alert-<%= message.type %>">
+              <%= message.title %> <%- message.text %> <br>
+              <%= message.duedate %>
+            </div>
+          <% } %>
+
+        <div class="barcode-input">
+                <form id="checkoutForm" action="/checkout" method="POST">
+                <label for="barcode">Scan Barcode:</label>             
+                <div class="input-container">
+                    <input type="text" id="barcode" name="barcode" placeholder="Scan or enter barcode here" required autofocus />
+                    <div id="loadingIndicator" class="loader" style="visibility: hidden;"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="loaned-items">
+            <h5>Your Current Checkouts</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (loandata && loandata.item_loan) { %>
+                        <!-- Always show nost recently transacted item first -->
+                        <% loandata.item_loan.forEach((loan) => { %>
+                            <% if (message && message.barcode && loan.item_barcode === message.barcode) { %>
+                              <tr class="table-success">
+                                <td><%= new Date(loan.due_date).toISOString().split("T")[0] %></td>
+                                <td><%= loan.title || "No Title Available" %></td>
+                              </tr>
+                            <% } %>
+                          <% }) %>
+                          <!-- List other items in original order (by due date) -->
+                          <% loandata.item_loan.forEach((loan) => { %>
+                            <% if (!message || !message.barcode || loan.item_barcode !== message.barcode) { %>
+                              <tr>
+                                <td><%= new Date(loan.due_date).toISOString().split("T")[0] %></td>
+                                <td><%= loan.title || "No Title Available" %></td>
+                              </tr>
+                            <% } %>
+                          <% }) %>
+
+                    <% } else { %>
+                        <div class="no-data">No loan data available</div>
+                      <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- bootstrap JS required for modal -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+        let inactivityTimeout;
+        let countdownInterval;
+        const timeoutDuration = <%= maxInactivityTimeout %>; 
+        const countdownDuration = 30000; // 30 seconds 
+        const countdownElement = document.getElementById("modalText"); 
+
+        // function to show inactivity countdown timer (displays when 30 seconds left)
+        function startCountdown() {
+          let countdown = countdownDuration / 1000; 
+          countdownElement.textContent = "You will be logged out in " + countdown + " seconds due to inactivity.";
+          const modalElement = new bootstrap.Modal(document.getElementById('countdownModal'));
+          modalElement.show();
+          countdownInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = "You will be logged out in " + countdown + " seconds due to inactivity.";
+            //once it hits zero, stop the countdown and reload the page
+            if (countdown <= 0) {
+              clearInterval(countdownInterval); 
+              location.reload();
+            }
+          }, 1000); // Update the countdown every second
+        }
+      
+        function closeModal() {
+        // close the countdown modal (called when inactivity resets)
+        const modalElement = bootstrap.Modal.getInstance(document.getElementById('countdownModal'));
+        if (modalElement) {
+            modalElement.hide();
+        }
+        }
+
+        // function to reset the inactivity timer upon user interaction
+        function resetInactivityTimer() {
+          clearTimeout(inactivityTimeout);
+          clearInterval(countdownInterval); // Clear previous countdown if any
+          countdownElement.style.display = "none"; // Hide countdown
+          closeModal(); //close countdown modal
+          inactivityTimeout = setTimeout(() => {
+            countdownElement.style.display = "block"; // Show countdown
+            startCountdown(); // Start the countdown
+          }, timeoutDuration - countdownDuration); 
+        }
+            
+        let absoluteTimeout; 
+
+        // function to track session absolute timeout
+        function resetAbsoluteTimer() {
+        clearTimeout(absoluteTimeout);
+        absoluteTimeout = setTimeout(() => {
+            location.reload(); // Reload page to update session
+        }, <%= maxSessionLength %>); 
+        }
+
+        // teset timer on user interaction
+        document.addEventListener("keypress", () => {
+        resetInactivityTimer();
+        });
+        document.addEventListener("click", () => {
+        resetInactivityTimer();
+        });
+        document.addEventListener("mousemove", () => {
+        resetInactivityTimer();
+        });
+
+        // Start the timers on page load
+        resetInactivityTimer();
+        resetAbsoluteTimer();
+
+        //show loading indicator when form is submitted, since Alma's API can take some time to return a response
+        document.getElementById('checkoutForm').addEventListener('submit', function() {
+            document.getElementById('loadingIndicator').style.visibility = 'visible'; 
+        });
+
+        //function to handle form submission
+        function submitCheckoutForm() {
+            // make sure loader is showing
+            document.getElementById('loadingIndicator').style.visibility = 'visible';
+
+            const barcode = document.getElementById('barcode').value.trim();
+
+            // Perform the AJAX call to the server
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/checkout', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    if (xhr.status === 200) {
+                        location.reload(); 
+                    } else {
+                        alert("Fail");
+                    }
+                }
+            };
+
+            // Send the request with the barcode data
+            xhr.send(JSON.stringify({ barcode: barcode }));
+        }
+
+      </script>
+</body>
+</html>

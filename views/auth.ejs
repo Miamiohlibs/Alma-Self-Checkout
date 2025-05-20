@@ -1,0 +1,50 @@
+<%- include('partials/_header') %>
+<style>
+
+    body {background: var(--background-dark) ;}
+
+</style>
+<body>
+    <div class="homeMessage"><img src="<%= brandingImg %>" alt="<%= imgAltText %>">
+    <h1>Self-Checkout Station</h1>
+    <div class="welcomeText"><%= welcomeMessage %> <br><i class='bx bxs-id-card'></i></div>
+</div>
+
+<% if (message) { %>
+    <div class="alert alert-<%= message.type %>">
+      <%= message.title %> <%- message.text %> <br>
+      <%= message.duedate %>
+    </div>
+  <% } %>
+  
+  <form action="/auth" method="POST" id="barcodeForm">
+    <input type="text" name="barcode" id="barcode" hidden>
+    <button type="submit" hidden>Submit</button>
+  </form>
+
+  <script>
+    
+  const barcodeForm = document.getElementById('barcodeForm');
+  const barcodeInput = document.getElementById('barcode');
+  const submitButton = barcodeForm.querySelector('button[type="submit"]');
+  let scannerInput = "";
+
+  document.addEventListener('keypress', (event) => {
+    if (event.key === "Enter") {
+      if (scannerInput.length > 0) {
+        barcodeInput.value = scannerInput.replace(/[^\w\-]/g, '').trim();
+
+        // Submit via click to trigger all handlers
+        setTimeout(() => {
+          submitButton.click();
+        }, 10);
+      }
+      scannerInput = "";
+      event.preventDefault(); 
+    } else {
+      scannerInput += event.key;
+    }
+  });
+  </script>
+</body>
+</html>

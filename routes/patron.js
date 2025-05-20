@@ -1,0 +1,47 @@
+const appConfig = require('../config/config'); 
+const express = require("express");
+const router = express.Router();
+const axios = require('axios');
+
+//cookie max age
+const absoluteMaxAge = 10 * 60 * 1000; // 10 minutes
+
+//route to load patron record 
+router.get("/", async (req, res) => {
+    let message = req.session.message || null;
+    delete req.session.message; // clear  message after passing it to the template
+    if (req.session.authenticated && req.session.user_id) {
+        const user_id = req.session.user_id;
+        req.session.cookie.maxAge = absoluteMaxAge;
+        try {
+          // retrieve user details from api
+          const userresponse = await axios.get(
+            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}?apikey=${appConfig.API_KEY}&expand=loans,requests,fees&format=json`
+          );
+          const userdata = userresponse.data;
+          //retrieve user loans from api
+          const response = await axios.get(
+            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?apikey=${appConfig.API_KEY}&format=json`
+          );
+          const loandata = response.data;
+
+          // render the loans table
+          res.render("loans", { 
+            ...appConfig.institutionDetails,
+            userdata, 
+            loandata, 
+            message,
+            maxInactivityTimeout: (appConfig.inactivityTimeout * 1000 * 60),
+            maxSessionLength: (appConfig.maxSessionLength * 1000 * 60) });
+        } catch (error) {
+          res.status(500).send("Error fetching data.");
+        }
+      } else {
+        // if authentication fails, display the reason
+        res.render("auth", { ...appConfig.institutionDetails, message }); 
+      }
+  });
+
+
+
+  module.exports = router;

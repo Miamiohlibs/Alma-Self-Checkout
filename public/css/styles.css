@@ -1,0 +1,162 @@
+:root {
+    --background-dark: rgb(173, 16, 42); /*header and homepage background color */
+    --text-light: #f4f4f9;
+    --heading-font-size: 3em;
+  }
+
+  /*Global styles */
+  body {
+    font-family: "Noto Sans", Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.alert{
+    text-align: center;
+}
+
+/* Login Screen styles */
+.homeMessage {
+    text-align: center;
+    padding-top: 100px;
+    color: var(--text-light)
+}
+.homeMessage h1 {
+    font-size: 3em; 
+    padding: 25px;
+}
+.homeMessage img {
+    width: 20%
+}
+.welcomeText {
+    font-size:1em;
+    color: var(--text-light)
+}
+.welcomeText i {
+    font-size: 3em;
+}
+
+
+/* Patron Record screen styles */
+.banner {
+    width: 100%;
+    background: var(--background-dark);
+    color: var(--text-light);
+    text-align: center;
+    padding: 10px 0;
+    display: inline;
+    font-size: 2em;
+}
+.banner img {
+    width: 300px;
+}
+.patron-container {
+    width: 80%;
+    max-width: 800px;
+    margin: 20px 0;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/*Patron info */
+.user-info {
+    margin-bottom: 20px;
+}
+.user-info h3{
+    padding-top: 25px;
+}
+.user-info p {
+    margin: 5px 0;
+}
+.user-info img{
+    float: left;
+    padding-right: 10px;
+    width: 150px;
+}
+.user-info form{
+    float: right;
+}
+.barcode-input {
+    margin-bottom: 20px;
+}
+.barcode-input input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+/*Item display */
+.loaned-items {
+    margin-top: 20px;
+}
+.loaned-items table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.loaned-items th, .loaned-items td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.loaned-items th {
+    background-color: #f2f2f2;
+}
+/*set width of date column */
+table td:first-child, table th:first-child {
+    width: 150px;
+}
+/* when there are no loans to list */
+.no-data{
+    padding: 25px 0;
+    text-align: center;
+}
+
+
+/* Loading spinner */
+/* Container for input and spinner */
+.input-container {
+    display: flex;
+    align-items: center;
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 3px solid #FFF;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+    margin: 5px;
+    display: inline-block;
+  }
+  .loader::after {
+    content: '';  
+    box-sizing: border-box;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid;
+    border-color:  rgb(173, 16, 42) transparent;
+  }
+  
+  @keyframes rotation {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  } 
