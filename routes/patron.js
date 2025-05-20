@@ -26,7 +26,7 @@ router.get("/", async (req, res) => {
           const loandata = response.data;
 
           // render the loans table
-          res.render("loans", { 
+          res.render("patronrecord", { 
             ...appConfig.institutionDetails,
             userdata, 
             loandata, 
@@ -37,8 +37,8 @@ router.get("/", async (req, res) => {
           res.status(500).send("Error fetching data.");
         }
       } else {
-        // if authentication fails, display the reason
-        res.render("auth", { ...appConfig.institutionDetails, message }); 
+        // if not authenticated, display the welcome page
+        res.render("welcome", { ...appConfig.institutionDetails, message }); 
       }
   });
 
