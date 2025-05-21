@@ -30,9 +30,10 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
   
     // make sure item barcode is valid
     if (!utils.validateItemBarcode(barcode)) {
-      req.session.message = {
-        type: "danger",
-        text: `<strong>Error: Invalid Barcode</strong><br>Unable to check out item ${barcode}. Please see the circulation desk.`,
+        console.error(`[${new Date().toISOString()}] Invalid barcode: ${barcode}`);
+        req.session.message = {
+          type: "danger",
+          text: `<strong>Error: Invalid Barcode</strong><br>Unable to check out item ${barcode}. Please see the circulation desk.`,
       };
       return res.redirect("/");
     }
