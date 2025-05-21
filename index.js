@@ -14,11 +14,11 @@ const absoluteMaxAge = 10 * 60 * 1000; // 10 minutes
 
 app.set('trust proxy', 1);
 
-//logging for thorough debugging if needed
-//app.use((req, res, next) => {
-//  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-//  next();
-//});
+//log all http requests for debugging (could be voluminous, consider disabling if not needed)
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 app.use(express.static("public"));
 app.use(express.json());
@@ -32,7 +32,6 @@ app.use(
       cookie: { 
         secure: false, // Set secure: true if using HTTPS
         maxAge: absoluteMaxAge, //set max session length
-//        sameSite: "Lax",
      }, 
     })
   );

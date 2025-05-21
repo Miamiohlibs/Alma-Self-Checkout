@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
             `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?apikey=${appConfig.API_KEY}&format=json`
           );
           const loandata = response.data;
-
+          console.log(`[${new Date().toISOString()}] Retrieved patron record for ${user_id}`);
           // render the loans table
           res.render("patronrecord", { 
             ...appConfig.institutionDetails,
@@ -34,7 +34,8 @@ router.get("/", async (req, res) => {
             maxInactivityTimeout: (appConfig.inactivityTimeout * 1000 * 60),
             maxSessionLength: (appConfig.maxSessionLength * 1000 * 60) });
         } catch (error) {
-          res.status(500).send("Error fetching data.");
+          console.error("Error retrieving patron record:", error);
+          res.status(500).send("Error retrieving patron record.");
         }
       } else {
         // if not authenticated, display the welcome page

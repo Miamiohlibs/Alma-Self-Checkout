@@ -54,7 +54,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
   
       //format due date
       const date = new Date(response.data.due_date);
-  
+      console.log(`[${new Date().toISOString()}] ${response.data.item_barcode} successfully checked out`);
       // Store success message in the session
       req.session.message = {
         type: "success",
@@ -69,6 +69,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
       // Check if error is a timeout error; occasionally the Alma API times out while waiting for a response
       // if so just send the barcode back, on page reload it will verify for the user whether the item was successfully checked out (it usually is) 
       if (error.code === "ECONNABORTED") {
+        console.error("Alma API did not respond in the allotted time");
         req.session.message = {
           type: "danger",
           barcode: barcode,

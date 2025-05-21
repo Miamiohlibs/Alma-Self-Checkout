@@ -30,7 +30,7 @@ router.post("/auth", async (req, res) => {
             // sample user if using Alma's sandbox API
             if (response.data.total_record_count === 0) {
             req.session.user_id = 'octavio.acevedo';
-                
+                console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
                 req.session.authenticated = true;
                 //redirect user to main page after authenticating 
                 req.session.save((err) => {
@@ -43,6 +43,7 @@ router.post("/auth", async (req, res) => {
 
             }
             else {
+                console.log(`[${new Date().toISOString()}] No user found for ${userBarcode}`);
                 req.session.message = {
                     type: "danger",
                     text: "<strong>Error: No User Found </strong><br> Please see the circulation desk.",
