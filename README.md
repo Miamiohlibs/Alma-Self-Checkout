@@ -12,6 +12,7 @@ A Node.js web application that provides a self-service checkout interface compat
 - Responsive design for touchscreen interfaces
 
 ![Welcome Screen](public/img/alamsco.png)
+![Patron Screen](public/img/alamsco2.png)
 
 
 
