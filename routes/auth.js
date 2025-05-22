@@ -23,12 +23,14 @@ router.post("/auth", async (req, res) => {
             );
 
             //check number of results, make sure there is only one
-            //   if (response.data.total_record_count === 1) {
-            //    req.session.user_id = response.data.user[0].primary_id;
+               if (response.data.total_record_count === 1) {
+                req.session.user_id = response.data.user[0].primary_id;
                 
             // sample user if using Alma's sandbox API
-            if (response.data.total_record_count === 0) {
-            req.session.user_id = 'octavio.acevedo';
+            //if (response.data.total_record_count === 0) {
+            //req.session.user_id = 'octavio.acevedo';
+
+            
                 console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
                 req.session.authenticated = true;
                 //redirect user to main page after authenticating 
