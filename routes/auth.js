@@ -3,7 +3,6 @@ const express = require("express");
 const router = express.Router();
 const axios = require('axios');
 const utils = require('../helpers/utils');
-const xmlformatter = require("xml-formatter");
 
 router.post("/auth", async (req, res) => {
     try {  
@@ -13,7 +12,7 @@ router.post("/auth", async (req, res) => {
         if (!utils.validatePatronBarcode(userBarcode)){
             req.session.message = {
                 type: "danger",
-                text: "<strong>Error: Invalid Barcode</strong><br>Please see the circulation desk.",
+                text: "Error: Invalid Barcode. Please see the circulation desk.",
                 };
                 return res.redirect("/");
         }
@@ -46,7 +45,7 @@ router.post("/auth", async (req, res) => {
                 console.log(`[${new Date().toISOString()}] No user found for ${userBarcode}`);
                 req.session.message = {
                     type: "danger",
-                    text: "<strong>Error: No User Found </strong><br> Please see the circulation desk.",
+                    text: "Error: No User Found. Please see the circulation desk.",
                 };
 
                 return res.redirect("/");
@@ -55,9 +54,9 @@ router.post("/auth", async (req, res) => {
         } catch (error) {
             console.log(error)
             const almaError = error.response.data
-            const formattedXml = xmlformatter(almaError, { indentation: "  ", collapseContent: true });
-            console.error("Error fetching data:", error);
-            return res.render("error", { almaError: formattedXml });
+            const mssgError = "API error. Please see the circulation desk."
+            console.error("Error fetching data:", almaError);
+            return res.render("error", { mssgError });
         }
     }
 

@@ -33,7 +33,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
         console.error(`[${new Date().toISOString()}] Invalid barcode: ${barcode}`);
         req.session.message = {
           type: "danger",
-          text: `<strong>Error: Invalid Barcode</strong><br>Unable to check out item ${barcode}. Please see the circulation desk.`,
+          text: `Error: Invalid Barcode. Unable to check out item ${barcode}. Please see the circulation desk.`,
       };
       return res.redirect("/");
     }
@@ -74,20 +74,20 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
         req.session.message = {
           type: "danger",
           barcode: barcode,
-          text: "<strong>Error:</strong> API did not return a response in the alloted time. <br>Please verify below that your item has been checked out.",
+          text: "Error: API did not return a response in the alloted time. <br>Please verify below that your item has been checked out.",
         };
       } else if (error.response) {
         const almaError = error.response.data;
         console.error("Error from Alma API:", almaError);
         req.session.message = {
           type: "danger",
-          text: `<strong>Error</strong><br>Unable to check out item ${barcode}. Please see the circulation desk.`,
+          text: `Error. Unable to check out item ${barcode}. Please see the circulation desk.`,
         };
       } else {
         console.error("Unexpected error:", error.message);
         req.session.message = {
           type: "danger",
-          text: "<strong>Error:</strong> An unexpected error occurred. Please try again later.",
+          text: "Error. An unexpected error occurred. Please try again later.",
         };
       }
       res.redirect("/");

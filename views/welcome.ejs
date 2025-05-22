@@ -12,13 +12,13 @@
 
 <% if (message) { %>
     <div class="alert alert-<%= message.type %>">
-      <%= message.title %> <%- message.text %> <br>
+      <%= message.title %> <%= message.text %> <br>
       <%= message.duedate %>
     </div>
   <% } %>
   
   <form action="/auth" method="POST" id="barcodeForm">
-    <input type="text" name="barcode" id="barcode" hidden>
+    <input type="text" name="barcode" id="barcode"  maxlength="64" hidden>
     <button type="submit" hidden>Submit</button>
   </form>
 

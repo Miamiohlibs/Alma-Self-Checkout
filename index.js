@@ -8,9 +8,37 @@ const checkoutRoute = require('./routes/checkout');
 const patronRoute = require('./routes/patron');
 const logoutRoute = require('./routes/logout');
 const session = require("express-session");
+const helmet = require('helmet');
 
 const maxInactiveAge = appConfig.inactivityTimeout * 1000 * 60; 
 const absoluteMaxAge = 10 * 60 * 1000; // 10 minutes
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://cdn.jsdelivr.net", 
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        ],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  referrerPolicy: { policy: "no-referrer" },
+  frameguard: { action: "deny" },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  noSniff: true,
+  hidePoweredBy: true,
+}));
+
 
 app.set('trust proxy', 1);
 
@@ -32,6 +60,8 @@ app.use(
       cookie: { 
         secure: false, // Set secure: true if using HTTPS
         maxAge: absoluteMaxAge, //set max session length
+        httpOnly: true,
+        sameSite: 'strict',
      }, 
     })
   );
