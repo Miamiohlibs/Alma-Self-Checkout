@@ -22,7 +22,7 @@ A Node.js web application that provides a self-service checkout interface compat
 
 ## Prerequisites
 
-- Node.js (compatible with Node v18 and Node v20, other versions are untested)
+- Node.js (compatible with Node.js 18 and Node.js 20, other versions are untested)
 - An Ex Libris Alma account with API access
 - Valid Alma API key with appropriate permissions
 
@@ -70,3 +70,8 @@ The application will be available at `http://localhost:3000` (or your configured
 - `public/` - Static assets (CSS, images)
 - `routes/` - Express route handlers
 - `views/` - EJS templates
+
+
+## Credits
+
+Developed by Rachel Maderik at Miami University, 2025-present
