@@ -39,6 +39,20 @@ npm install
    - Set your institution details
    - Configure timeout settings
    - Set barcode validation format
+5. If serving over HTTPS, set `session.cookie.secure: true` in index.js:
+        `app.use(
+            session({
+            secret: appConfig.session_secret, 
+            resave: false,
+            saveUninitialized: true,
+            cookie: { 
+                secure: **true**, // Set secure: true if using HTTPS
+                maxAge: absoluteMaxAge, //set max session length
+                httpOnly: true,
+                sameSite: 'strict',
+            }, 
+            })
+        );`
 
 ## Configuration Options
 
