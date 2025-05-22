@@ -1,6 +1,6 @@
 # Alma Self-Checkout Station
 
-A Node.js web application that provides a self-service checkout interface for library patrons using Ex Libris Alma as the ILS.
+A Node.js web application that provides a self-service checkout interface compatible with Ex Libris Alma.
 
 ## Features
 
@@ -10,6 +10,10 @@ A Node.js web application that provides a self-service checkout interface for li
 - Session management with inactivity timeout
 - Support for various barcode validation formats (Luhn, Modulo43)
 - Responsive design for touchscreen interfaces
+
+![Welcome Screen](img/alamsco.png)
+
+
 
 
 ## Prerequisites
@@ -54,12 +58,6 @@ node index.js
 
 The application will be available at `http://localhost:3000` (or your configured port).
 
-## Security Features
-
-- Session management with automatic timeouts
-- Input sanitization for barcodes
-- Secure cookie handling
-- XSS protection
 
 ## File Structure
 
