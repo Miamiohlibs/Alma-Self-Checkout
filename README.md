@@ -11,7 +11,7 @@ A Node.js web application that provides a self-service checkout interface compat
 - Support for various barcode validation formats (Luhn, Modulo43)
 - Responsive design for touchscreen interfaces
 
-![Welcome Screen](img/alamsco.png)
+![Welcome Screen](public/img/alamsco.png)
 
 
 
