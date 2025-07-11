@@ -8,11 +8,12 @@ const appConfig = {
     API_KEY: '', // See https://developers.exlibrisgroup.com/manage/keys/
     alma_circ_desk: '', // See https://developers.exlibrisgroup.com/alma/apis/docs/xsd/rest_item_loan.xsd/#item_loan
     alma_library: '', // See https://developers.exlibrisgroup.com/alma/apis/docs/xsd/rest_item_loan.xsd/#item_loan
-    barcode_format: '', // your library's item barcode format, used for validation: 'luhn','modulo43', or 'none'
-    inactivityTimeout: 2, // in minutes; maximum inactivity length
-    maxSessionLength: 10, // in minutes; maximum session length since last transaction, regardless of activity (do not set too low)
+    barcode_format: 'none', // your library's item barcode format, used for validation: 'luhn','modulo43', or 'none'
+    inactivityTimeout: 1, // in minutes; maximum inactivity length
     port: 3000,
-    session_secret: '', // set unique secret for session cookie
+    sessionHost: '127.0.0.1:11211', // host and port for memcached server
+    sessionSecret: '', // secret for session cookie
+    sessionStoreSecret: '', //secret for memcached store
 };
 
 module.exports = appConfig;

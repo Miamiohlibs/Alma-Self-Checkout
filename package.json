@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.8.1",
+    "connect-memcached": "^2.0.0",
     "csurf": "^1.11.0",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",

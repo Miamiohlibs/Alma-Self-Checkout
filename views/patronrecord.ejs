@@ -115,7 +115,7 @@
             //once it hits zero, stop the countdown and reload the page
             if (countdown <= 0) {
               clearInterval(countdownInterval); 
-              location.reload();
+              window.location.href = '/logout';
             }
           }, 1000); // Update the countdown every second
         }
@@ -142,15 +142,38 @@
             
         let absoluteTimeout; 
 
-        // function to track session absolute timeout
-        function resetAbsoluteTimer() {
-        clearTimeout(absoluteTimeout);
-        absoluteTimeout = setTimeout(() => {
-            location.reload(); // Reload page to update session
-        }, <%= maxSessionLength %>); 
-        }
+        let activityDetected = false;
 
-        // teset timer on user interaction
+        // Mark activity on mouse move, key press, etc.
+        ['mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+        document.addEventListener(evt, () => {
+            activityDetected = true;
+        });
+        });
+
+        // Every 30 seconds, send a ping if there was activity
+        setInterval(() => {
+        if (activityDetected) {
+            fetch('/keepalive', {
+            method: 'POST',
+            credentials: 'include'
+            })
+            .then(response => {
+            if (!response.ok) {
+                console.error(`Keepalive failed: ${response.status} ${response.statusText}`);
+            } else {
+                console.log(`Keepalive successful: ${response.status}`);
+            }
+            })
+            .catch(error => {
+            console.error('Keepalive request error:', error);
+            });
+
+            activityDetected = false;
+        }
+        }, 30000);
+
+        // reset timer on user interaction
         document.addEventListener("keypress", () => {
         resetInactivityTimer();
         });
@@ -163,7 +186,6 @@
 
         // Start the timers on page load
         resetInactivityTimer();
-        resetAbsoluteTimer();
 
         //show loading indicator when form is submitted, since Alma's API can take some time to return a response
         document.getElementById('checkoutForm').addEventListener('submit', function() {
@@ -177,7 +199,7 @@
 
             const barcode = document.getElementById('barcode').value.trim();
 
-            // Perform the AJAX call to the server
+            // send data to checkout route
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/checkout', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
