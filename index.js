@@ -60,13 +60,13 @@ app.use(session({
   saveUninitialized: false,
   store: new MemcachedStore({
     hosts: [appConfig.sessionHost],
-    secret: appConfig.sessionStoreSecret
+    secret: appConfig.sessionStoreSecret,
   }),
   cookie: {
     maxAge: maxInactiveAge,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+   // sameSite: 'lax',
   }
 }));
 
@@ -102,7 +102,6 @@ app.use('/', logoutRoute);
 
 app.post('/keepalive', (req, res) => {
   if (req.session) {
-    // No need to call req.session.touch() here, middleware handles it
     res.sendStatus(200);
   } else {
     res.sendStatus(401);

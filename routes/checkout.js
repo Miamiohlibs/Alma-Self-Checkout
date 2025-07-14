@@ -10,7 +10,11 @@ function ensureAuthenticated(req, res, next) {
   if (req.session && req.session.user_id) {
     return next();
   } else {
-    return res.status(403).send("Unauthorized");
+    req.session.message = {
+    type: "danger",
+    text: `Error: Authentication error. Please log in again.`,
+    };
+    return res.redirect("/");
   }
 }
 
@@ -39,7 +43,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
     }
   
     // API checkout URL
-    const loanURL = `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?item_barcode=${barcode}&apikey=${appConfig.API_KEY}&format=json`;
+    const loanURL = `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?item_barcode=${barcode}&format=json`;
   
     try {
       // post item to API with a 10-second timeout (Alma's API is slow to send a response sometimes)
@@ -49,6 +53,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
           "X-Requested-With": "XMLHttpRequest",
           Accept: "application/json",
           "Content-Type": "application/json",
+          "Authorization": `apikey ${appConfig.API_KEY}`,
         },
         timeout: 10000, // 10 seconds timeout
       });

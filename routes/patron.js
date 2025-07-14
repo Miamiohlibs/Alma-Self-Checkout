@@ -12,12 +12,14 @@ router.get("/", async (req, res) => {
         try {
           // retrieve user details from api
           const userresponse = await axios.get(
-            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}?apikey=${appConfig.API_KEY}&expand=loans,requests,fees&format=json`
+            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}?expand=loans,requests,fees&format=json`,
+            {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
           );
           const userdata = userresponse.data;
           //retrieve user loans from api
           const response = await axios.get(
-            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?apikey=${appConfig.API_KEY}&format=json`
+            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?format=json`,
+            {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
           );
           const loandata = response.data;
           console.log(`[${new Date().toISOString()}] Retrieved patron record for ${user_id}`);

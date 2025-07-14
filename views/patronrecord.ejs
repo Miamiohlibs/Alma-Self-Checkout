@@ -192,33 +192,6 @@
             document.getElementById('loadingIndicator').style.visibility = 'visible'; 
         });
 
-        //function to handle form submission
-        function submitCheckoutForm() {
-            // make sure loader is showing
-            document.getElementById('loadingIndicator').style.visibility = 'visible';
-
-            const barcode = document.getElementById('barcode').value.trim();
-
-            // send data to checkout route
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/checkout', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    if (xhr.status === 200) {
-                        location.reload(); 
-                    } else {
-                        alert("Fail");
-                    }
-                }
-            };
-
-            // Send the request with the barcode data
-            xhr.send(JSON.stringify({ barcode: barcode }));
-        }
-
       </script>
 </body>
 </html>
