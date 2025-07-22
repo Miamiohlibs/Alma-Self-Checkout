@@ -13,7 +13,7 @@ const helmet = require('helmet');
 const MemcachedStore = require('connect-memcached')(session); 
 
 const maxInactiveAge = appConfig.inactivityTimeout * 1000 * 60; //inactivity limit
-const absoluteMaxAge = 10 * 60 * 1000; // maximum session length for cookie (10 minutes)
+const absoluteMaxAge = 5 * 60 * 1000; // maximum session length for cookie (5 minutes)
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -63,7 +63,7 @@ app.use(session({
     secret: appConfig.sessionStoreSecret,
   }),
   cookie: {
-    maxAge: maxInactiveAge,
+    maxAge: absoluteMaxAge,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
    // sameSite: 'lax',
@@ -102,8 +102,12 @@ app.use('/', logoutRoute);
 
 app.post('/keepalive', (req, res) => {
   if (req.session) {
+    //update time of last action and reset cookie
+    req.session.lastAction = new Date().getTime();
+  //  req.session.cookie.maxAge = absoluteMaxAge;
     res.sendStatus(200);
   } else {
+    console.log("no keepalive")
     res.sendStatus(401);
   }
 });
