@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require('axios');
 const utils = require('../helpers/utils');
+const logger = require('../helpers/logger');
 
 
 //ensure user is authenticated before allowing access to checkout route
@@ -34,7 +35,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
   
     // make sure item barcode is valid
     if (!utils.validateItemBarcode(barcode)) {
-        console.error(`[${new Date().toISOString()}] Invalid barcode: ${barcode}`);
+        logger.error(`Invalid barcode: ${barcode}`);
         req.session.message = {
           type: "danger",
           text: `Error: Invalid Barcode. Unable to check out item ${barcode}. Please see the circulation desk.`,
@@ -60,7 +61,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
   
       //format due date
       const date = new Date(response.data.due_date);
-      console.log(`[${new Date().toISOString()}] ${response.data.item_barcode} successfully checked out`);
+      logger.info(`${response.data.item_barcode} successfully checked out`);
       // Store success message in the session
       req.session.message = {
         type: "success",
@@ -75,7 +76,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
       // Check if error is a timeout error; occasionally the Alma API times out while waiting for a response
       // if so just send the barcode back, on page reload it will verify for the user whether the item was successfully checked out (it usually is) 
       if (error.code === "ECONNABORTED") {
-        console.error("Alma API did not respond in the allotted time");
+        logger.error("Alma API did not respond in the allotted time");
         req.session.message = {
           type: "danger",
           barcode: barcode,
@@ -83,13 +84,13 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
         };
       } else if (error.response) {
         const almaError = error.response.data;
-        console.error("Error from Alma API:", almaError);
+        logger.error("Error from Alma API:", almaError);
         req.session.message = {
           type: "danger",
           text: `Error. Unable to check out item ${barcode}. Please see the circulation desk.`,
         };
       } else {
-        console.error("Unexpected error:", error.message);
+        logger.error("Unexpected error:", error.message);
         req.session.message = {
           type: "danger",
           text: "Error. An unexpected error occurred. Please try again later.",

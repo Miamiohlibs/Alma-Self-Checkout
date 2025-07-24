@@ -3,6 +3,8 @@ const express = require("express");
 const router = express.Router();
 const axios = require('axios');
 const utils = require('../helpers/utils');
+const logger = require('../helpers/logger');
+
 
 router.post("/auth", async (req, res) => {
     try {  
@@ -32,14 +34,12 @@ router.post("/auth", async (req, res) => {
             //req.session.user_id = 'octavio.acevedo';
 
             
-                console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
+                logger.info(`User ${req.session.user_id} authenticated successfully`);
                 req.session.authenticated = true;
-                req.session.lastAction = Date.now();
-                console.log(`[Auth] lastAction initialized to: ${req.session.lastAction}`);
                 //redirect user to main page after authenticating 
                 req.session.save((err) => {
                     if (err) {
-                        console.error("Session save error:", err);
+                        logger.error("Session save error:", err);
                         return res.status(500).send("Session error");
                     }
                     res.redirect("/");
@@ -47,7 +47,7 @@ router.post("/auth", async (req, res) => {
 
             }
             else {
-                console.log(`[${new Date().toISOString()}] No user found for ${userBarcode}`);
+                logger.error(`No user found for ${userBarcode}`);
                 req.session.message = {
                     type: "danger",
                     text: "Error: No User Found. Please see the circulation desk.",
@@ -60,13 +60,13 @@ router.post("/auth", async (req, res) => {
             console.log(error)
             const almaError = error.response.data
             const mssgError = "API error. Please see the circulation desk."
-            console.error("Error fetching data:", almaError);
+            logger.error("Error fetching data:", almaError);
             return res.render("error", { mssgError });
         }
     }
 
     catch {
-        console.error("Error in /auth route:", err);
+        logger.error("Error in /auth route:", err);
         res.status(500).send("Internal Server Error");
     }
     

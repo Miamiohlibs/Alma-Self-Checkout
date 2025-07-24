@@ -2,6 +2,7 @@ const appConfig = require('../config/config');
 const express = require("express");
 const router = express.Router();
 const axios = require('axios');
+const logger = require('../helpers/logger');
 
 //route to load patron record 
 router.get("/", async (req, res) => {
@@ -22,7 +23,7 @@ router.get("/", async (req, res) => {
             {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
           );
           const loandata = response.data;
-          console.log(`[${new Date().toISOString()}] Retrieved patron record for ${user_id}`);
+          logger.info(`Retrieved patron record for ${user_id}`);
           // render the loans table
           res.render("patronrecord", { 
             ...appConfig.institutionDetails,
@@ -32,7 +33,7 @@ router.get("/", async (req, res) => {
             maxInactivityTimeout: (appConfig.inactivityTimeout * 1000 * 60),
           });
         } catch (error) {
-          console.error("Error retrieving patron record:", error);
+          logger.error("Error retrieving patron record:", error);
           res.status(500).send("Error retrieving patron record.");
         }
       } else {

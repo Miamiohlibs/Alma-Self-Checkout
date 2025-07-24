@@ -160,13 +160,13 @@
             })
             .then(response => {
             if (!response.ok) {
-                console.error(`Keepalive failed: ${response.status} ${response.statusText}`);
+              //  console.error(`Keepalive failed: ${response.status} ${response.statusText}`);
             } else {
-                console.log(`Keepalive successful: ${response.status}`);
+            //    console.log(`Keepalive successful: ${response.status}`);
             }
             })
             .catch(error => {
-            console.error('Keepalive request error:', error);
+            logger.error('Keepalive request error:', error);
             });
 
             activityDetected = false;

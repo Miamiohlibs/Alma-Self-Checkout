@@ -9,6 +9,8 @@ const patronRoute = require('./routes/patron');
 const logoutRoute = require('./routes/logout');
 const session = require("express-session");
 const helmet = require('helmet');
+const morgan = require('morgan');
+const logger = require('./helpers/logger');
 
 const MemcachedStore = require('connect-memcached')(session); 
 
@@ -45,10 +47,11 @@ app.use(helmet({
 app.set('trust proxy', 1);
 
 //log all http requests for debugging (could be voluminous, consider disabling if not needed)
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+app.use(morgan('combined', {
+  stream: {
+    write: (message) => logger.http(message.trim())
+  }
+}));
 
 app.use(express.static("public"));
 app.use(express.json());
@@ -75,10 +78,8 @@ app.post('/keepalive', (req, res) => {
   if (req.session) {
     //update time of last action
     req.session.lastAction = new Date().getTime();
-    console.log(`[Keepalive] Updated lastAction: ${req.session.lastAction}`);
     res.sendStatus(200);
   } else {
-    console.log('[Keepalive] No session found.');
     res.sendStatus(401);
   }
 });
@@ -88,7 +89,6 @@ app.post('/keepalive', (req, res) => {
 app.use((req, res, next) => {
   // don't check session activity if user is not authenticated
   if (!req.session.authenticated) {
-    console.log('[Session] Not authenticated, skipping inactivity check.');
     return next();
   }
 
@@ -97,18 +97,15 @@ app.use((req, res, next) => {
   req.session.lastAction = req.session.lastAction || now;
   const timeSinceLastAction = now - req.session.lastAction;
 
-  console.log(`[Session] lastAction: ${req.session.lastAction}, now: ${now}, timeSinceLastAction: ${timeSinceLastAction}, maxInactiveAge: ${maxInactiveAge}`);
 
   //if more than the designated time period has passed, destroy the session
   if (timeSinceLastAction > maxInactiveAge) {
-    console.log('[Session] Inactivity timeout reached. Destroying session.');
     return req.session.destroy(() => res.clearCookie('connect.sid').redirect('/'));
   }
 
   //update time of last action and reset cookie
   req.session.lastAction = now;
   req.session.cookie.maxAge = absoluteMaxAge;
-  console.log(`[Session] Updated lastAction to: ${req.session.lastAction}, cookie maxAge: ${req.session.cookie.maxAge}`);
 
   next();
 });  
@@ -118,13 +115,18 @@ app.use('/', checkoutRoute);
 app.use('/', patronRoute);
 app.use('/', logoutRoute);
 
-
-
 app.set("view engine", "ejs");
+
+// Error handling middleware (Winston will log the full stack)
+app.use((err, req, res, next) => {
+  logger.error(err); // logs stack trace
+  res.status(500).send('Something went wrong');
+});
+
 
 // Start the server
 app.listen(appConfig.port, () => {
-  console.log(`Server is running on http://localhost:${appConfig.port}`);
+  logger.info(`Server is running on http://localhost:${appConfig.port}`);
 });
 
 module.exports = app;
