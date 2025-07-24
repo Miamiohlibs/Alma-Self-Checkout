@@ -34,6 +34,8 @@ router.post("/auth", async (req, res) => {
             
                 console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
                 req.session.authenticated = true;
+                req.session.lastAction = Date.now();
+                console.log(`[Auth] lastAction initialized to: ${req.session.lastAction}`);
                 //redirect user to main page after authenticating 
                 req.session.save((err) => {
                     if (err) {

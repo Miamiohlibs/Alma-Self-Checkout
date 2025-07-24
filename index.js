@@ -70,26 +70,45 @@ app.use(session({
   }
 }));
 
+
+app.post('/keepalive', (req, res) => {
+  if (req.session) {
+    //update time of last action
+    req.session.lastAction = new Date().getTime();
+    console.log(`[Keepalive] Updated lastAction: ${req.session.lastAction}`);
+    res.sendStatus(200);
+  } else {
+    console.log('[Keepalive] No session found.');
+    res.sendStatus(401);
+  }
+});
+
+
 // inactivity middleware - checks last action time and resets cookie on each transaction if necessary
 app.use((req, res, next) => {
   // don't check session activity if user is not authenticated
   if (!req.session.authenticated) {
-    return next()
-};
+    console.log('[Session] Not authenticated, skipping inactivity check.');
+    return next();
+  }
 
   // calculate time since last interaction
   const now = new Date().getTime();
   req.session.lastAction = req.session.lastAction || now;
   const timeSinceLastAction = now - req.session.lastAction;
 
+  console.log(`[Session] lastAction: ${req.session.lastAction}, now: ${now}, timeSinceLastAction: ${timeSinceLastAction}, maxInactiveAge: ${maxInactiveAge}`);
+
   //if more than the designated time period has passed, destroy the session
   if (timeSinceLastAction > maxInactiveAge) {
+    console.log('[Session] Inactivity timeout reached. Destroying session.');
     return req.session.destroy(() => res.clearCookie('connect.sid').redirect('/'));
   }
 
   //update time of last action and reset cookie
   req.session.lastAction = now;
   req.session.cookie.maxAge = absoluteMaxAge;
+  console.log(`[Session] Updated lastAction to: ${req.session.lastAction}, cookie maxAge: ${req.session.cookie.maxAge}`);
 
   next();
 });  
@@ -100,17 +119,6 @@ app.use('/', patronRoute);
 app.use('/', logoutRoute);
 
 
-app.post('/keepalive', (req, res) => {
-  if (req.session) {
-    //update time of last action and reset cookie
-    req.session.lastAction = new Date().getTime();
-  //  req.session.cookie.maxAge = absoluteMaxAge;
-    res.sendStatus(200);
-  } else {
-    console.log("no keepalive")
-    res.sendStatus(401);
-  }
-});
 
 app.set("view engine", "ejs");
 
