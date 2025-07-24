@@ -19,7 +19,8 @@ router.post("/auth", async (req, res) => {
         try {
             // get user's Alma primary ID from scanned barcode
             const response = await axios.get(
-            `${appConfig.AlmaAPI}/almaws/v1/users?limit=10&offset=0&q=identifiers~${userBarcode}&order_by=last_name%2C%20first_name%2C%20primary_id&expand=none&apikey=${appConfig.API_KEY}&format=json`
+            `${appConfig.AlmaAPI}/almaws/v1/users?limit=10&offset=0&q=identifiers~${userBarcode}&order_by=last_name%2C%20first_name%2C%20primary_id&expand=none&format=json`,
+            {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
             );
 
             //check number of results, make sure there is only one
@@ -33,6 +34,8 @@ router.post("/auth", async (req, res) => {
             
                 console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
                 req.session.authenticated = true;
+                req.session.lastAction = Date.now();
+                console.log(`[Auth] lastAction initialized to: ${req.session.lastAction}`);
                 //redirect user to main page after authenticating 
                 req.session.save((err) => {
                     if (err) {

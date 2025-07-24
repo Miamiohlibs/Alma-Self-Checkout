@@ -10,8 +10,10 @@ const logoutRoute = require('./routes/logout');
 const session = require("express-session");
 const helmet = require('helmet');
 
-const maxInactiveAge = appConfig.inactivityTimeout * 1000 * 60; 
-const absoluteMaxAge = 10 * 60 * 1000; // 10 minutes
+const MemcachedStore = require('connect-memcached')(session); 
+
+const maxInactiveAge = appConfig.inactivityTimeout * 1000 * 60; //inactivity limit
+const absoluteMaxAge = 5 * 60 * 1000; // maximum session length for cookie (5 minutes)
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -52,44 +54,71 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(
-    session({
-      secret: appConfig.session_secret, 
-      resave: false,
-      saveUninitialized: true,
-      cookie: { 
-        secure: false, // Set secure: true if using HTTPS
-        maxAge: absoluteMaxAge, //set max session length
-        httpOnly: true,
-        sameSite: 'strict',
-     }, 
-    })
-  );
+app.use(session({
+  secret: appConfig.sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  store: new MemcachedStore({
+    hosts: [appConfig.sessionHost],
+    secret: appConfig.sessionStoreSecret,
+  }),
+  cookie: {
+    maxAge: absoluteMaxAge,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+   // sameSite: 'lax',
+  }
+}));
 
-// inactivity middleware - checks last action time and resets cookie if necessary
+
+app.post('/keepalive', (req, res) => {
+  if (req.session) {
+    //update time of last action
+    req.session.lastAction = new Date().getTime();
+    console.log(`[Keepalive] Updated lastAction: ${req.session.lastAction}`);
+    res.sendStatus(200);
+  } else {
+    console.log('[Keepalive] No session found.');
+    res.sendStatus(401);
+  }
+});
+
+
+// inactivity middleware - checks last action time and resets cookie on each transaction if necessary
 app.use((req, res, next) => {
-    
-    // don't check session activity if user is not authenticated
-    if (!req.session.authenticated) return next(); 
+  // don't check session activity if user is not authenticated
+  if (!req.session.authenticated) {
+    console.log('[Session] Not authenticated, skipping inactivity check.');
+    return next();
+  }
 
-    const now = new Date().getTime();
-    req.session.lastAction = req.session.lastAction || now; 
-    const timeSinceLastAction = now - req.session.lastAction;
+  // calculate time since last interaction
+  const now = new Date().getTime();
+  req.session.lastAction = req.session.lastAction || now;
+  const timeSinceLastAction = now - req.session.lastAction;
 
-    if (timeSinceLastAction > maxInactiveAge) {
-      return req.session.destroy(() => res.clearCookie('connect.sid').redirect('/'));
-    }
-    req.session.lastAction = now;
-  
-    // reset cookie maxAge at each request
-    req.session.cookie.maxAge = absoluteMaxAge;
-    next();
-  });
+  console.log(`[Session] lastAction: ${req.session.lastAction}, now: ${now}, timeSinceLastAction: ${timeSinceLastAction}, maxInactiveAge: ${maxInactiveAge}`);
+
+  //if more than the designated time period has passed, destroy the session
+  if (timeSinceLastAction > maxInactiveAge) {
+    console.log('[Session] Inactivity timeout reached. Destroying session.');
+    return req.session.destroy(() => res.clearCookie('connect.sid').redirect('/'));
+  }
+
+  //update time of last action and reset cookie
+  req.session.lastAction = now;
+  req.session.cookie.maxAge = absoluteMaxAge;
+  console.log(`[Session] Updated lastAction to: ${req.session.lastAction}, cookie maxAge: ${req.session.cookie.maxAge}`);
+
+  next();
+});  
 
 app.use('/', authRoute);
 app.use('/', checkoutRoute);
 app.use('/', patronRoute);
 app.use('/', logoutRoute);
+
+
 
 app.set("view engine", "ejs");
 
