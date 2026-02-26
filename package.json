@@ -18,7 +18,7 @@
     "helmet": "^8.1.0",
     "luhn": "^2.4.1",
     "node-fetch": "^3.3.2",
-    "xml-formatter": "^3.6.4"
+    "xml-formatter": "^3.6.7"
   },
   "resolutions": {
   "form-data": "^4.0.4"
