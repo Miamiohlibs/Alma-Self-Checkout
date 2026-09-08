@@ -2,6 +2,7 @@ const appConfig = require('../config/config');
 const express = require("express");
 const router = express.Router();
 const axios = require('axios');
+const utils = require('../helpers/utils');
 
 //route to load patron record 
 router.get("/", async (req, res) => {
@@ -32,7 +33,9 @@ router.get("/", async (req, res) => {
             maxInactivityTimeout: (appConfig.inactivityTimeout * 1000 * 60),
           });
         } catch (error) {
-          console.error("Error retrieving patron record:", error);
+          // logged via describeApiError: the raw axios error carries our Alma
+          // API key in error.config.headers.Authorization
+          console.error(`[${new Date().toISOString()}] Error retrieving patron record: ${utils.describeApiError(error)}`);
           res.status(500).send("Error retrieving patron record.");
         }
       } else {

@@ -23,7 +23,7 @@
                       ...
                       </div>
                       <div class="modal-footer">
-                      <button type="button" class="btn btn-success">Stay Logged In</button>
+                      <button type="button" class="btn btn-success" id="stayLoggedIn">Stay Logged In</button>
                       </div>
                   </div>
                 </div>
@@ -134,54 +134,61 @@
           clearInterval(countdownInterval); // Clear previous countdown if any
           countdownElement.style.display = "none"; // Hide countdown
           closeModal(); //close countdown modal
+          // never schedule in the past, however short inactivityTimeout is set
+          const delay = Math.max(timeoutDuration - countdownDuration, 1000);
           inactivityTimeout = setTimeout(() => {
             countdownElement.style.display = "block"; // Show countdown
             startCountdown(); // Start the countdown
-          }, timeoutDuration - countdownDuration); 
+          }, delay);
         }
-            
-        let absoluteTimeout; 
 
         let activityDetected = false;
 
-        // Mark activity on mouse move, key press, etc.
-        ['mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+        // Deliberate interaction only, so an idle station does not hold a
+        // session open. 'touchstart' covers the touchscreen stations.
+        const ACTIVITY_EVENTS = ['keydown', 'scroll', 'click', 'touchstart'];
+
+        ACTIVITY_EVENTS.forEach(evt => {
         document.addEventListener(evt, () => {
             activityDetected = true;
+            resetInactivityTimer();
         });
         });
 
-        // Every 30 seconds, send a ping if there was activity
-        setInterval(() => {
-        if (activityDetected) {
-            fetch('/keepalive', {
+        // ping the server to refresh the session's inactivity window
+        function sendKeepalive() {
+            return fetch('/keepalive', {
             method: 'POST',
             credentials: 'include'
             })
             .then(response => {
+            // the server ends expired sessions itself, so a 401 means this
+            // session is already gone -- return to the welcome screen
+            if (response.status === 401) {
+                window.location.href = '/';
+                return;
+            }
             if (!response.ok) {
                 console.error(`Keepalive failed: ${response.status} ${response.statusText}`);
-            } else {
-                console.log(`Keepalive successful: ${response.status}`);
             }
             })
             .catch(error => {
             console.error('Keepalive request error:', error);
             });
+        }
 
+        // Every 30 seconds, send a ping if there was activity
+        setInterval(() => {
+        if (activityDetected) {
+            sendKeepalive();
             activityDetected = false;
         }
         }, 30000);
 
-        // reset timer on user interaction
-        document.addEventListener("keypress", () => {
-        resetInactivityTimer();
-        });
-        document.addEventListener("click", () => {
-        resetInactivityTimer();
-        });
-        document.addEventListener("mousemove", () => {
-        resetInactivityTimer();
+        // dismiss the inactivity warning and refresh the session server-side
+        document.getElementById('stayLoggedIn').addEventListener('click', () => {
+            resetInactivityTimer();
+            sendKeepalive();
         });
 
         // Start the timers on page load

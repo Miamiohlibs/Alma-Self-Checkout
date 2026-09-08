@@ -49,8 +49,9 @@ npm install
 - `alma_library`: Library code (See https://developers.exlibrisgroup.com/alma/apis/docs/xsd/rest_item_loan.xsd/#item_loan)
 - `barcode_format`: Item barcode validation format ('luhn', 'modulo43', or 'none')
 - `inactivityTimeout`: Maximum inactivity time in minutes
-- `maxSessionLength`: Maximum session length in minutes
+- `maxSessionLength`: Absolute session ceiling in minutes; a session ends at this point no matter how much activity it sees (default 10)
 - `port`: Port number, natch
+- `bindAddress`: Interface to listen on (default `127.0.0.1`). A scanned barcode is the only credential the station asks for, so keep this on loopback unless the browser runs on a different host than the server; anything reachable from the wider network can attempt patron barcodes
 - `institutionDetails`: Branding settings (logo, welcome message, etc.)
 
 ## Running the Application

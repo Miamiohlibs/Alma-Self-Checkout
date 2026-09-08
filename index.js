@@ -13,7 +13,15 @@ const helmet = require('helmet');
 const MemcachedStore = require('connect-memcached')(session); 
 
 const maxInactiveAge = appConfig.inactivityTimeout * 1000 * 60; //inactivity limit
-const absoluteMaxAge = 5 * 60 * 1000; // maximum session length for cookie (5 minutes)
+// absolute ceiling on a session: activity extends the inactivity window but can
+// never push a session past this, so a station that is never left truly idle
+// still returns to the welcome screen. Defaults to 10 minutes when unset.
+const maxSessionLength = (appConfig.maxSessionLength || 10) * 1000 * 60;
+
+// A scanned barcode is the only credential here, so the station must not be
+// reachable from the wider network. Defaults to loopback; set bindAddress in
+// config.js only if the browser runs on a different host than this server.
+const bindAddress = appConfig.bindAddress || '127.0.0.1';
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -63,7 +71,7 @@ app.use(session({
     secret: appConfig.sessionStoreSecret,
   }),
   cookie: {
-    maxAge: absoluteMaxAge,
+    maxAge: maxSessionLength,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
    // sameSite: 'lax',
@@ -71,47 +79,63 @@ app.use(session({
 }));
 
 
-app.post('/keepalive', (req, res) => {
-  if (req.session) {
-    //update time of last action
-    req.session.lastAction = new Date().getTime();
-    console.log(`[Keepalive] Updated lastAction: ${req.session.lastAction}`);
-    res.sendStatus(200);
-  } else {
-    console.log('[Keepalive] No session found.');
-    res.sendStatus(401);
-  }
-});
+// tear down an expired session. Background pings get a 401 so the page can react;
+// ordinary navigation gets sent back to the welcome screen.
+function endSession(req, res, reason) {
+  const isBackgroundPing = req.path === '/keepalive';
+  console.log(`[Session] ${reason}. Destroying session.`);
+  return req.session.destroy(() => {
+    res.clearCookie('connect.sid');
+    return isBackgroundPing ? res.sendStatus(401) : res.redirect('/');
+  });
+}
 
-
-// inactivity middleware - checks last action time and resets cookie on each transaction if necessary
+// session lifetime middleware - enforces the inactivity window and the absolute
+// session cap on every authenticated request, /keepalive included.
 app.use((req, res, next) => {
   // don't check session activity if user is not authenticated
   if (!req.session.authenticated) {
-    console.log('[Session] Not authenticated, skipping inactivity check.');
     return next();
   }
 
-  // calculate time since last interaction
-  const now = new Date().getTime();
+  const now = Date.now();
   req.session.lastAction = req.session.lastAction || now;
-  const timeSinceLastAction = now - req.session.lastAction;
+  req.session.loginTime = req.session.loginTime || now;
 
-  console.log(`[Session] lastAction: ${req.session.lastAction}, now: ${now}, timeSinceLastAction: ${timeSinceLastAction}, maxInactiveAge: ${maxInactiveAge}`);
+  const timeSinceLastAction = now - req.session.lastAction;
+  const sessionAge = now - req.session.loginTime;
+
+  console.log(`[Session] age: ${sessionAge}/${maxSessionLength}, idle: ${timeSinceLastAction}/${maxInactiveAge}`);
+
+  // the absolute cap is checked first: activity must not be able to defer it
+  if (sessionAge > maxSessionLength) {
+    return endSession(req, res, 'Maximum session length reached');
+  }
 
   //if more than the designated time period has passed, destroy the session
   if (timeSinceLastAction > maxInactiveAge) {
-    console.log('[Session] Inactivity timeout reached. Destroying session.');
-    return req.session.destroy(() => res.clearCookie('connect.sid').redirect('/'));
+    return endSession(req, res, 'Inactivity timeout reached');
   }
 
-  //update time of last action and reset cookie
+  //update time of last action
   req.session.lastAction = now;
-  req.session.cookie.maxAge = absoluteMaxAge;
-  console.log(`[Session] Updated lastAction to: ${req.session.lastAction}, cookie maxAge: ${req.session.cookie.maxAge}`);
+  // keep the cookie's own lifetime tied to what remains of the absolute cap, so
+  // a surviving cookie can never outlive the session it refers to
+  req.session.cookie.maxAge = maxSessionLength - sessionAge;
 
   next();
 });  
+
+// Registered AFTER the middleware above on purpose. When this sat in front of
+// it, a ping refreshed lastAction with no timeout check and no authentication
+// check, which let a walked-away session be revived indefinitely.
+app.post('/keepalive', (req, res) => {
+  if (!req.session.authenticated) {
+    return res.sendStatus(401);
+  }
+  // reaching here means the middleware already validated and refreshed the session
+  return res.sendStatus(200);
+});
 
 app.use('/', authRoute);
 app.use('/', checkoutRoute);
@@ -123,8 +147,8 @@ app.use('/', logoutRoute);
 app.set("view engine", "ejs");
 
 // Start the server
-app.listen(appConfig.port, () => {
-  console.log(`Server is running on http://localhost:${appConfig.port}`);
+app.listen(appConfig.port, bindAddress, () => {
+  console.log(`Server is running on http://${bindAddress}:${appConfig.port}`);
 });
 
 module.exports = app;

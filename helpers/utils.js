@@ -1,6 +1,21 @@
 const appConfig = require('../config/config');
 const luhn = require("luhn");
 
+// upper bound on any scanned barcode; mirrors the maxlength on the scan inputs
+// so an oversized value can't be pushed straight into an Alma API URL
+const MAX_BARCODE_LENGTH = 64;
+
+// common shape check for anything arriving from a scanner: a non-empty string
+// of a sane length. Without this a missing form field reaches the validators as
+// undefined, which the regexes below coerce to the string "undefined" and pass.
+function isScannableString(value) {
+    return (
+        typeof value === "string" &&
+        value.length > 0 &&
+        value.length <= MAX_BARCODE_LENGTH
+    );
+}
+
 //function for validating modulo43 barcodes
 function validateModulo43(barcode) {
 
@@ -33,6 +48,9 @@ function validateModulo43(barcode) {
 
 //validate item barcodes when checking out
 function validateItemBarcode(barcode) {
+    if (!isScannableString(barcode)) {
+        return false;
+    }
     if (appConfig.barcode_format == 'luhn') {
         return luhn.validate(barcode);
     } else if (appConfig.barcode_format == 'modulo43') {
@@ -46,12 +64,33 @@ function validateItemBarcode(barcode) {
 
 // validate patron's barcode
 function validatePatronBarcode(str) {
+    if (!isScannableString(str)) {
+        return false;
+    }
     // make sure it only has numbers and letters
     return /^[A-Za-z0-9]+$/.test(str);
+}
+
+// Build a log-safe description of an Alma API failure.
+// axios attaches the full request config to its error objects, including the
+// Authorization header (our Alma API key) and the query string (the patron's
+// barcode), and console.log/util.inspect prints all of it. So never log an
+// axios error directly -- log this instead.
+function describeApiError(error) {
+    if (error.response) {
+        const almaErrors = error.response.data?.errorList?.error || [];
+        const detail = almaErrors
+            .map((e) => `${e.errorCode}: ${e.errorMessage}`)
+            .join("; ");
+        return `Alma API returned HTTP ${error.response.status}${detail ? ` (${detail})` : ""}`;
+    }
+    return `Alma API request failed: ${error.code || error.message}`;
 }
 
 
 module.exports = {
     validateItemBarcode,
-    validatePatronBarcode
+    validatePatronBarcode,
+    describeApiError,
+    MAX_BARCODE_LENGTH
 };
