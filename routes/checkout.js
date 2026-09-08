@@ -34,7 +34,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
   
     // make sure item barcode is valid
     if (!utils.validateItemBarcode(barcode)) {
-        console.error(`[${new Date().toISOString()}] Invalid barcode: ${barcode}`);
+        console.error(`[${new Date().toISOString()}] Rejected an item barcode that failed validation`);
         req.session.message = {
           type: "danger",
           text: `Error: Invalid Barcode. Unable to check out item ${barcode}. Please see the circulation desk.`,
@@ -60,7 +60,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
   
       //format due date
       const date = new Date(response.data.due_date);
-      console.log(`[${new Date().toISOString()}] ${response.data.item_barcode} successfully checked out`);
+      console.log(`[${new Date().toISOString()}] Item successfully checked out`);
       // Store success message in the session
       req.session.message = {
         type: "success",
@@ -82,14 +82,13 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
           text: "Error: API did not return a response in the alloted time. <br>Please verify below that your item has been checked out.",
         };
       } else if (error.response) {
-        const almaError = error.response.data;
-        console.error("Error from Alma API:", almaError);
+        console.error(`[${new Date().toISOString()}] Checkout failed: ${utils.describeApiError(error)}`);
         req.session.message = {
           type: "danger",
           text: `Error. Unable to check out item ${barcode}. Please see the circulation desk.`,
         };
       } else {
-        console.error("Unexpected error:", error.message);
+        console.error(`[${new Date().toISOString()}] Checkout failed: ${utils.describeApiError(error)}`);
         req.session.message = {
           type: "danger",
           text: "Error. An unexpected error occurred. Please try again later.",

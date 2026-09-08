@@ -79,11 +79,18 @@ function validatePatronBarcode(str) {
 function describeApiError(error) {
     if (error.response) {
         const almaErrors = error.response.data?.errorList?.error || [];
-        const detail = almaErrors
-            .map((e) => `${e.errorCode}: ${e.errorMessage}`)
-            .join("; ");
-        return `Alma API returned HTTP ${error.response.status}${detail ? ` (${detail})` : ""}`;
+        // Error CODES only. Alma's free-text errorMessage routinely quotes the
+        // value that was looked up -- a patron identifier or an item barcode --
+        // and circulation records must not land in application logs. Codes are
+        // documented by Ex Libris, so they remain enough to diagnose a failure.
+        const codes = almaErrors
+            .map((e) => e.errorCode)
+            .filter(Boolean)
+            .join(", ");
+        return `Alma API returned HTTP ${error.response.status}${codes ? ` (Alma error ${codes})` : ""}`;
     }
+    // no response: this is our own transport/runtime error, which carries no
+    // patron data, so the message is safe and worth keeping for diagnosis
     return `Alma API request failed: ${error.code || error.message}`;
 }
 

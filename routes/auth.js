@@ -100,7 +100,7 @@ router.post("/auth", authLimiter, async (req, res) => {
             return res.status(500).send("Session error");
         }
 
-        console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
+        console.log(`[${new Date().toISOString()}] Patron authenticated successfully`);
         //redirect user to main page after authenticating 
         return res.redirect("/");
 

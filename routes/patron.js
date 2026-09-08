@@ -23,7 +23,7 @@ router.get("/", async (req, res) => {
             {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
           );
           const loandata = response.data;
-          console.log(`[${new Date().toISOString()}] Retrieved patron record for ${user_id}`);
+          console.log(`[${new Date().toISOString()}] Retrieved patron record`);
           // render the loans table
           res.render("patronrecord", { 
             ...appConfig.institutionDetails,
