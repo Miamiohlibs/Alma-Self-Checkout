@@ -65,6 +65,13 @@ node index.js
 The application will be available at `http://localhost:3000` (or your configured port).
 
 
+## Logging and Patron Privacy
+
+Application logs deliberately record **no patron identifiers and no item barcodes**.
+Logs state that an event occurred (a patron authenticated, an item was checked
+out, a checkout failed with a given Alma error code) without saying who or what.
+
+
 ## File Structure
 
 - `config/` - Configuration files
