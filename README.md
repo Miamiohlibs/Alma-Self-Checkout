@@ -65,30 +65,6 @@ node index.js
 The application will be available at `http://localhost:3000` (or your configured port).
 
 
-## Logging and Patron Privacy
-
-Application logs deliberately record **no patron identifiers and no item barcodes**.
-Circulation records identifying what a patron borrowed are confidential under FERPA
-and Ohio Rev. Code 149.432, and this station's logs are not a suitable place to hold
-them. Logs state that an event occurred (a patron authenticated, an item was checked
-out, a checkout failed with a given Alma error code) without saying who or what.
-
-Alma remains the system of record: the authoritative loan history lives there, so
-nothing auditable is lost by keeping it out of these logs.
-
-Two consequences worth knowing:
-
-- Diagnosing a specific patron's failed checkout from logs alone is not possible by
-  design. Use the Alma error code in the log line plus Alma's own records.
-- Alma's free-text API error messages often quote the barcode or identifier that was
-  looked up, so `helpers/utils.js` logs Alma error *codes* only and discards the
-  message text. Never log an axios error object directly -- it carries both the API
-  key and the request URL.
-
-The HTTP request log records method and path only. Barcodes arrive in POST bodies
-and are not logged. It is still voluminous on a busy station; disable it in
-`index.js` if you do not need it.
-
 ## File Structure
 
 - `config/` - Configuration files
