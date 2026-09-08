@@ -30,7 +30,7 @@
             </div>
             <!-- end modal -->
             <h3>Welcome, <%= userdata.first_name %> <%= userdata.last_name %></h3>
-            <form action="/logout" method="GET" style="margin-top: 20px;">
+            <form action="/logout" method="POST" id="logoutForm" style="margin-top: 20px;">
                 <button type="submit">Logout</button>
               </form>
             <p>Current Checkouts: <%= userdata.loans.value %></p>
@@ -99,7 +99,9 @@
     <script>
         let inactivityTimeout;
         let countdownInterval;
-        const timeoutDuration = <%= maxInactivityTimeout %>; 
+        // JSON.stringify, not <%%= %>: this lands in a script body, where HTML
+        // escaping is the wrong escaper for the context
+        const timeoutDuration = <%- JSON.stringify(maxInactivityTimeout) %>;
         const countdownDuration = 30000; // 30 seconds 
         const countdownElement = document.getElementById("modalText"); 
 
@@ -114,8 +116,9 @@
             countdownElement.textContent = "You will be logged out in " + countdown + " seconds due to inactivity.";
             //once it hits zero, stop the countdown and reload the page
             if (countdown <= 0) {
-              clearInterval(countdownInterval); 
-              window.location.href = '/logout';
+              clearInterval(countdownInterval);
+              // /logout is POST-only, so submit the form rather than navigating
+              document.getElementById('logoutForm').submit();
             }
           }, 1000); // Update the countdown every second
         }

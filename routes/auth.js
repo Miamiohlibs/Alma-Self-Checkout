@@ -31,6 +31,20 @@ const authLimiter = rateLimit({
     },
 });
 
+// promisified wrappers so the session steps below read in the same
+// async/await style as the API call, and surface errors the same way
+function regenerateSession(req) {
+    return new Promise((resolve, reject) => {
+        req.session.regenerate((err) => (err ? reject(err) : resolve()));
+    });
+}
+
+function saveSession(req) {
+    return new Promise((resolve, reject) => {
+        req.session.save((err) => (err ? reject(err) : resolve()));
+    });
+}
+
 router.post("/auth", authLimiter, async (req, res) => {
     try {
         const userBarcode = req.body.barcode?.trim().replace(/[^\w\-]/g, ""); //sanitize input 
@@ -46,7 +60,7 @@ router.post("/auth", authLimiter, async (req, res) => {
 
         // get user's Alma primary ID from scanned barcode
         const response = await axios.get(
-            `${appConfig.AlmaAPI}/almaws/v1/users?limit=10&offset=0&q=identifiers~${userBarcode}&order_by=last_name%2C%20first_name%2C%20primary_id&expand=none&format=json`,
+            `${appConfig.AlmaAPI}/almaws/v1/users?limit=10&offset=0&q=identifiers~${encodeURIComponent(userBarcode)}&order_by=last_name%2C%20first_name%2C%20primary_id&expand=none&format=json`,
             {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
         );
 
@@ -65,22 +79,30 @@ router.post("/auth", authLimiter, async (req, res) => {
         //if (response.data.total_record_count === 0) {
         //req.session.user_id = 'octavio.acevedo';
 
-        req.session.user_id = response.data.user[0].primary_id;
-        req.session.authenticated = true;
-        req.session.lastAction = Date.now();
-        // anchors the absolute session cap enforced in index.js; no amount of
-        // activity may extend a session past maxSessionLength from this moment
-        req.session.loginTime = Date.now();
-        console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
+        const primaryId = response.data.user[0].primary_id;
 
+        try {
+            // Issue a brand new session ID before granting any authority, so a
+            // session cookie that was already present cannot be escalated into
+            // an authenticated one (session fixation).
+            await regenerateSession(req);
+
+            req.session.user_id = primaryId;
+            req.session.authenticated = true;
+            req.session.lastAction = Date.now();
+            // anchors the absolute session cap enforced in index.js; no amount of
+            // activity may extend a session past maxSessionLength from this moment
+            req.session.loginTime = Date.now();
+
+            await saveSession(req);
+        } catch (sessionErr) {
+            console.error(`[${new Date().toISOString()}] Session error during authentication: ${sessionErr.message}`);
+            return res.status(500).send("Session error");
+        }
+
+        console.log(`[${new Date().toISOString()}] User ${req.session.user_id} authenticated successfully`);
         //redirect user to main page after authenticating 
-        return req.session.save((err) => {
-            if (err) {
-                console.error("Session save error:", err.message);
-                return res.status(500).send("Session error");
-            }
-            res.redirect("/");
-        });
+        return res.redirect("/");
 
     } catch (err) {
         // Alma unreachable, or anything else unexpected. This previously read

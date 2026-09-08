@@ -43,7 +43,7 @@ router.post("/checkout", ensureAuthenticated, async (req, res) => {
     }
   
     // API checkout URL
-    const loanURL = `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?item_barcode=${barcode}&format=json`;
+    const loanURL = `${appConfig.AlmaAPI}/almaws/v1/users/${encodeURIComponent(user_id)}/loans?item_barcode=${encodeURIComponent(barcode)}&format=json`;
   
     try {
       // post item to API with a 10-second timeout (Alma's API is slow to send a response sometimes)
