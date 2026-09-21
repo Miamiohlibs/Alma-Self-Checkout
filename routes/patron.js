@@ -2,6 +2,7 @@ const appConfig = require('../config/config');
 const express = require("express");
 const router = express.Router();
 const axios = require('axios');
+const utils = require('../helpers/utils');
 
 //route to load patron record 
 router.get("/", async (req, res) => {
@@ -12,17 +13,17 @@ router.get("/", async (req, res) => {
         try {
           // retrieve user details from api
           const userresponse = await axios.get(
-            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}?expand=loans,requests,fees&format=json`,
+            `${appConfig.AlmaAPI}/almaws/v1/users/${encodeURIComponent(user_id)}?expand=loans,requests,fees&format=json`,
             {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
           );
           const userdata = userresponse.data;
           //retrieve user loans from api
           const response = await axios.get(
-            `${appConfig.AlmaAPI}/almaws/v1/users/${user_id}/loans?format=json`,
+            `${appConfig.AlmaAPI}/almaws/v1/users/${encodeURIComponent(user_id)}/loans?format=json`,
             {headers: { 'Authorization' : `apikey ${appConfig.API_KEY}` }}
           );
           const loandata = response.data;
-          console.log(`[${new Date().toISOString()}] Retrieved patron record for ${user_id}`);
+          console.log(`[${new Date().toISOString()}] Retrieved patron record`);
           // render the loans table
           res.render("patronrecord", { 
             ...appConfig.institutionDetails,
@@ -32,7 +33,9 @@ router.get("/", async (req, res) => {
             maxInactivityTimeout: (appConfig.inactivityTimeout * 1000 * 60),
           });
         } catch (error) {
-          console.error("Error retrieving patron record:", error);
+          // logged via describeApiError: the raw axios error carries our Alma
+          // API key in error.config.headers.Authorization
+          console.error(`[${new Date().toISOString()}] Error retrieving patron record: ${utils.describeApiError(error)}`);
           res.status(500).send("Error retrieving patron record.");
         }
       } else {

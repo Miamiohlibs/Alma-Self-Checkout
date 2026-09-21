@@ -23,14 +23,14 @@
                       ...
                       </div>
                       <div class="modal-footer">
-                      <button type="button" class="btn btn-success">Stay Logged In</button>
+                      <button type="button" class="btn btn-success" id="stayLoggedIn">Stay Logged In</button>
                       </div>
                   </div>
                 </div>
             </div>
             <!-- end modal -->
             <h3>Welcome, <%= userdata.first_name %> <%= userdata.last_name %></h3>
-            <form action="/logout" method="GET" style="margin-top: 20px;">
+            <form action="/logout" method="POST" id="logoutForm" style="margin-top: 20px;">
                 <button type="submit">Logout</button>
               </form>
             <p>Current Checkouts: <%= userdata.loans.value %></p>
@@ -99,7 +99,9 @@
     <script>
         let inactivityTimeout;
         let countdownInterval;
-        const timeoutDuration = <%= maxInactivityTimeout %>; 
+        // JSON.stringify, not <%%= %>: this lands in a script body, where HTML
+        // escaping is the wrong escaper for the context
+        const timeoutDuration = <%- JSON.stringify(maxInactivityTimeout) %>;
         const countdownDuration = 30000; // 30 seconds 
         const countdownElement = document.getElementById("modalText"); 
 
@@ -114,8 +116,9 @@
             countdownElement.textContent = "You will be logged out in " + countdown + " seconds due to inactivity.";
             //once it hits zero, stop the countdown and reload the page
             if (countdown <= 0) {
-              clearInterval(countdownInterval); 
-              window.location.href = '/logout';
+              clearInterval(countdownInterval);
+              // /logout is POST-only, so submit the form rather than navigating
+              document.getElementById('logoutForm').submit();
             }
           }, 1000); // Update the countdown every second
         }
@@ -134,54 +137,61 @@
           clearInterval(countdownInterval); // Clear previous countdown if any
           countdownElement.style.display = "none"; // Hide countdown
           closeModal(); //close countdown modal
+          // never schedule in the past, however short inactivityTimeout is set
+          const delay = Math.max(timeoutDuration - countdownDuration, 1000);
           inactivityTimeout = setTimeout(() => {
             countdownElement.style.display = "block"; // Show countdown
             startCountdown(); // Start the countdown
-          }, timeoutDuration - countdownDuration); 
+          }, delay);
         }
-            
-        let absoluteTimeout; 
 
         let activityDetected = false;
 
-        // Mark activity on mouse move, key press, etc.
-        ['mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+        // Deliberate interaction only, so an idle station does not hold a
+        // session open. 'touchstart' covers the touchscreen stations.
+        const ACTIVITY_EVENTS = ['keydown', 'scroll', 'click', 'touchstart'];
+
+        ACTIVITY_EVENTS.forEach(evt => {
         document.addEventListener(evt, () => {
             activityDetected = true;
+            resetInactivityTimer();
         });
         });
 
-        // Every 30 seconds, send a ping if there was activity
-        setInterval(() => {
-        if (activityDetected) {
-            fetch('/keepalive', {
+        // ping the server to refresh the session's inactivity window
+        function sendKeepalive() {
+            return fetch('/keepalive', {
             method: 'POST',
             credentials: 'include'
             })
             .then(response => {
+            // the server ends expired sessions itself, so a 401 means this
+            // session is already gone -- return to the welcome screen
+            if (response.status === 401) {
+                window.location.href = '/';
+                return;
+            }
             if (!response.ok) {
                 console.error(`Keepalive failed: ${response.status} ${response.statusText}`);
-            } else {
-                console.log(`Keepalive successful: ${response.status}`);
             }
             })
             .catch(error => {
             console.error('Keepalive request error:', error);
             });
+        }
 
+        // Every 30 seconds, send a ping if there was activity
+        setInterval(() => {
+        if (activityDetected) {
+            sendKeepalive();
             activityDetected = false;
         }
         }, 30000);
 
-        // reset timer on user interaction
-        document.addEventListener("keypress", () => {
-        resetInactivityTimer();
-        });
-        document.addEventListener("click", () => {
-        resetInactivityTimer();
-        });
-        document.addEventListener("mousemove", () => {
-        resetInactivityTimer();
+        // dismiss the inactivity warning and refresh the session server-side
+        document.getElementById('stayLoggedIn').addEventListener('click', () => {
+            resetInactivityTimer();
+            sendKeepalive();
         });
 
         // Start the timers on page load
