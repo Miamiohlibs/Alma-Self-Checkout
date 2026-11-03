@@ -12,7 +12,7 @@
     "axios": "^1.20.0",
     "connect-memcached": "^2.0.0",
     "dotenv": "^16.4.7",
-    "ejs": "^3.1.10",
+    "ejs": "^7.0.2",
     "express": "^4.22.3",
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.18.1",
